@@ -66,6 +66,30 @@ def calculate_sucess_rate(sequence : list[float]) -> float:
             duplicate += 1
     return 1 - duplicate/length
 
+def get_SEM_RMS_diff_RMS_ave_over_delta(delta_values : list[float], N : int, runs : int) -> tuple[dict[float], dict[float], dict[float]]:
+    """
+    Perform runs and return the SEM, RMS_diff and MAR results over the delta values.
+    For each delta value, the algorithm is run 'runs' times and the results are averaged.
+    """
+    SEM_dict = {}        # Standard Error of the Mean
+    RMS_diff_dict = {}        # Root Mean Square
+    RMS_ave_dict = {}        # Metropolis Acceptance Rate
+    for delta in delta_values:
+        print(f"delta = {delta}")
+        SEM = []
+        RMS_diff = []
+        RMS_ave = []
+        for _ in range(runs):
+            samples = metropolis_algorithm(delta, N, 100)
+            mean_sample = np.mean(samples)
+            SEM.append(np.std(samples) / np.sqrt(N))
+            RMS_diff.append(np.sqrt(np.mean((mean_sample - 1)**2)))
+            RMS_ave.append(np.var(samples)/len(samples))
+        
+        RMS_ave_dict[delta] = np.mean(RMS_ave)**0.5
+        SEM_dict[delta] = np.mean(SEM)
+        RMS_diff_dict[delta] = np.mean(RMS_diff)
+    return SEM_dict, RMS_diff_dict, RMS_ave_dict
 
 def get_SEM_RMS_diff_RMS_ave_over_N(delta : float, N_values : list[int], runs : int) -> tuple[dict[int], dict[int], dict[int]]:
     """
@@ -93,6 +117,36 @@ def get_SEM_RMS_diff_RMS_ave_over_N(delta : float, N_values : list[int], runs : 
         RMS_ave_dict[N] = np.mean(RMS_ave)**0.5
     return SEM_dict, RMS_diff_dict, RMS_ave_dict
 
+def plot_SEM_RMS_diff_RMS_ave_over_delta(SEM : dict[float], RMS_diff : dict[float], RMS_ave : dict[float]) -> None:
+    """
+    Plot the SEM, RMS_diff over the delta values.
+    """
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 3, 1)
+    plt.plot(list(SEM.keys()), list(SEM.values()))
+    plt.xscale('log')
+    plt.xlabel('Delta')
+    plt.ylabel('Standard Error (SEM)')
+    plt.title('SEM vs Delta')
+
+    plt.subplot(1, 3, 2)
+    plt.plot(list(RMS_diff.keys()), list(RMS_diff.values()), color='orange')
+    plt.xscale('log')
+    plt.xlabel('Delta')
+    plt.ylabel('RMS Difference')
+    plt.title('RMS Difference vs Delta')
+
+    plt.subplot(1, 3, 3)
+    plt.plot(list(RMS_ave.keys()), list(RMS_ave.values()), color='green')
+    plt.xscale('log')
+    plt.xlabel('Delta')
+    plt.ylabel('Average RMS')
+    plt.title('Average RMS vs Delta')
+
+    plt.tight_layout()
+    plt.savefig('figures/3.1.pdf')
+    plt.show()
+
 def plot_SEM_RMS_diff_RMS_ave_over_N(SEM_delta_N : dict[dict[int]], RMS_diff_delta_N : dict[dict[int]], RMS_ave : dict[dict[int]]) -> None:
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 3, 1)
@@ -118,21 +172,34 @@ def plot_SEM_RMS_diff_RMS_ave_over_N(SEM_delta_N : dict[dict[int]], RMS_diff_del
         plt.plot(list(RMS_ave.keys()), list(RMS_ave.values()), label=f'delta = {delta}')
     plt.xscale('log')
     plt.xlabel('N')
-    plt.ylabel('RMS')
-    plt.title('RMS average vs N')
+    plt.ylabel('Average RMS')
+    plt.title('Average RMS vs N')
     plt.legend()
 
     plt.tight_layout()
     plt.savefig('figures/3.1_over_N.pdf')
     plt.show()
 
+
 ##################### Plotting and Analysis #####################
 
 
 
+def over_delta():
+    """
+    Plot the SEM, RMS_diff over the delta values, for a fixed N.
+    """
+
+    delta_values = [ i for i in np.arange(0.01, 10, 0.05)] # A lot of delta values, takes a minute to run
+    N = 10000   # Number of steps for each run
+    runs = 20   # Number of samples for each delta value
+
+    SEM_dict, RMS_diff_dict, RMS_ave_dict = get_SEM_RMS_diff_RMS_ave_over_delta(delta_values, N, runs)
+    plot_SEM_RMS_diff_RMS_ave_over_delta(SEM_dict, RMS_diff_dict, RMS_ave_dict)
+
     
 
-def main1():
+def over_n():
     """
     Plot the SEM, RMS_diff over the N values, for a fixed delta, but a few different delta values.
     """
@@ -153,4 +220,4 @@ def main1():
     plot_SEM_RMS_diff_RMS_ave_over_N(SEM_dict_delta_N, RMS_diff_dict_delta_N, RMS_ave_dict_delta_N)
 
 if __name__ == "__main__":
-    main1()
+    over_delta()
