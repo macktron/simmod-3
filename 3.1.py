@@ -66,73 +66,36 @@ def calculate_sucess_rate(sequence : list[float]) -> float:
             duplicate += 1
     return 1 - duplicate/length
 
-def get_SEM_RMS_MAR_over_delta(delta_values : list[float], N : int, runs : int) -> tuple[dict[float], dict[float], dict[float]]:
-    """
-    Perform runs and return the SEM, RMS and MAR results over the delta values.
-    For each delta value, the algorithm is run 'runs' times and the results are averaged.
-    """
-    SEM_dict = {}        # Standard Error of the Mean
-    RMS_dict = {}        # Root Mean Square
-    MAR_dict = {}        # Metropolis Acceptance Rate
-    for delta in delta_values:
-        SEM = []
-        RMS = []
-        for _ in range(runs):
-            samples = metropolis_algorithm(delta, N, 100)
-            mean_sample = np.mean(samples)
-            SEM.append(np.std(samples) / np.sqrt(N))
-            RMS.append(np.sqrt(np.mean((mean_sample - 1)**2)))
-        
-        SEM_dict[delta] = np.mean(SEM)
-        RMS_dict[delta] = np.mean(RMS)
-    return SEM_dict, RMS_dict
 
-def get_SEM_RMS_MAR_over_N(delta : float, N_values : list[int], runs : int) -> tuple[dict[int], dict[int], dict[int]]:
+def get_SEM_RMS_diff_RMS_ave_over_N(delta : float, N_values : list[int], runs : int) -> tuple[dict[int], dict[int], dict[int]]:
     """
-    Perform runs and return the SEM, RMS and MAR results over the N values.
+    Perform runs and return the SEM, RMS_diff and MAR results over the N values.
     For each N value, the algorithm is run 'runs' times and the results are averaged.
     """
-    SEM_dict = {}        # Standard Error of the Mean
-    RMS_dict = {}        # Root Mean Square
+    SEM_dict = {}               # Standard Error of the Mean
+    RMS_diff_dict = {}          # Root Mean Square of the difference between the mean and the true value
+    RMS_ave_dict = {}           # Average of the root mean square
+    
     for N in N_values:
         SEM = []
-        RMS = []
+        RMS_diff = []
+        RMS_ave = []
         for _ in range(runs):
-            samples = metropolis_algorithm(delta, N, 100)
+            N0 = int(N//3)
+            samples = metropolis_algorithm(delta, N, N0)
             mean_sample = np.mean(samples)
             SEM.append(np.std(samples) / np.sqrt(N))
-            RMS.append(np.sqrt(np.mean((mean_sample - 1)**2)))
+            RMS_diff.append(np.sqrt(np.mean((mean_sample - 1)**2)))
+            RMS_ave.append(np.var(samples)/len(samples))
         
         SEM_dict[N] = np.mean(SEM)
-        RMS_dict[N] = np.mean(RMS)
-    return SEM_dict, RMS_dict
+        RMS_diff_dict[N] = np.mean(RMS_diff)
+        RMS_ave_dict[N] = np.mean(RMS_ave)**0.5
+    return SEM_dict, RMS_diff_dict, RMS_ave_dict
 
-def plot_SEM_RMS(SEM : dict[float], RMS : dict[float]) -> None:
-    """
-    Plot the SEM, RMS over the delta values.
-    """
+def plot_SEM_RMS_diff_RMS_ave_over_N(SEM_delta_N : dict[dict[int]], RMS_diff_delta_N : dict[dict[int]], RMS_ave : dict[dict[int]]) -> None:
     plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.plot(list(SEM.keys()), list(SEM.values()))
-    plt.xscale('log')
-    plt.xlabel('Delta')
-    plt.ylabel('Standard Error (SEM)')
-    plt.title('SEM vs Delta')
-
-    plt.subplot(1, 2, 2)
-    plt.plot(list(RMS.keys()), list(RMS.values()), color='orange')
-    plt.xscale('log')
-    plt.xlabel('Delta')
-    plt.ylabel('RMS Difference')
-    plt.title('RMS Difference vs Delta')
-
-    plt.tight_layout()
-    plt.savefig('figures/3.1.pdf')
-    plt.show()
-
-def plot_SEM_RMS_MAR_over_N(SEM_delta_N : dict[dict[int]], RMS_delta_N : dict[dict[int]]) -> None:
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     for delta, SEM in SEM_delta_N.items():
         plt.plot(list(SEM.keys()), list(SEM.values()), label=f'delta = {delta}')
     plt.xscale('log')
@@ -141,53 +104,53 @@ def plot_SEM_RMS_MAR_over_N(SEM_delta_N : dict[dict[int]], RMS_delta_N : dict[di
     plt.title('SEM vs N')
     plt.legend()
 
-    plt.subplot(1, 2, 2)
-    for delta, RMS in RMS_delta_N.items():
-        plt.plot(list(RMS.keys()), list(RMS.values()), label=f'delta = {delta}')
+    plt.subplot(1, 3, 2)
+    for delta, RMS_diff in RMS_diff_delta_N.items():
+        plt.plot(list(RMS_diff.keys()), list(RMS_diff.values()), label=f'delta = {delta}')
     plt.xscale('log')
     plt.xlabel('N')
     plt.ylabel('RMS Difference')
     plt.title('RMS Difference vs N')
     plt.legend()
 
+    plt.subplot(1, 3, 3)
+    for delta, RMS_ave in RMS_ave.items():
+        plt.plot(list(RMS_ave.keys()), list(RMS_ave.values()), label=f'delta = {delta}')
+    plt.xscale('log')
+    plt.xlabel('N')
+    plt.ylabel('RMS')
+    plt.title('RMS average vs N')
+    plt.legend()
+
     plt.tight_layout()
     plt.savefig('figures/3.1_over_N.pdf')
     plt.show()
-
 
 ##################### Plotting and Analysis #####################
 
 
 
+    
+
 def main1():
     """
-    Plot the SEM, RMS over the delta values, for a fixed N.
-    """
-
-    delta_values = [ i for i in np.arange(0.01, 10, 0.05)] # A lot of delta values, takes a minute to run
-    N = 10000   # Number of steps for each run
-    runs = 20   # Number of samples for each delta value
-
-    SEM_dict, RMS_dict = get_SEM_RMS_MAR_over_delta(delta_values, N, runs)
-    plot_SEM_RMS(SEM_dict, RMS_dict)
-
-def main2():
-    """
-    Plot the SEM, RMS over the N values, for a fixed delta, but a few different delta values.
+    Plot the SEM, RMS_diff over the N values, for a fixed delta, but a few different delta values.
     """
 
     delta = [0.01, 0.1, 1, 10]
     N_values = [ int(i) for i in np.linspace(10, 100000, 20)]
 
     runs = 10   # Number of samples for each delta value
-    RMS_dict_delta_N = {}
+    RMS_diff_dict_delta_N = {}
+    RMS_ave_dict_delta_N = {}
     SEM_dict_delta_N = {}
     for delta in delta:
         print(f"delta = {delta}")
-        SEM_dict, RMS_dict = get_SEM_RMS_MAR_over_N(delta, N_values, runs)
-        RMS_dict_delta_N[delta] = RMS_dict
+        SEM_dict, RMS_diff_dict, RMS_ave_dict = get_SEM_RMS_diff_RMS_ave_over_N(delta, N_values, runs)
+        RMS_diff_dict_delta_N[delta] = RMS_diff_dict
         SEM_dict_delta_N[delta] = SEM_dict
-    plot_SEM_RMS_MAR_over_N(SEM_dict_delta_N, RMS_dict_delta_N)
+        RMS_ave_dict_delta_N[delta] = RMS_ave_dict
+    plot_SEM_RMS_diff_RMS_ave_over_N(SEM_dict_delta_N, RMS_diff_dict_delta_N, RMS_ave_dict_delta_N)
 
 if __name__ == "__main__":
-    main2()
+    main1()
