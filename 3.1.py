@@ -74,17 +74,19 @@ def get_SEM_RMS_diff_RMS_ave_over_delta(delta_values : list[float], N : int, run
     SEM_dict = {}        # Standard Error of the Mean
     RMS_diff_dict = {}        # Root Mean Square
     RMS_ave_dict = {}        # Metropolis Acceptance Rate
+
+    N0 = int(N/3)
     for delta in delta_values:
         print(f"delta = {delta}")
         SEM = []
         RMS_diff = []
         RMS_ave = []
         for _ in range(runs):
-            samples = metropolis_algorithm(delta, N, 100)
+            samples = metropolis_algorithm(delta, N, N0)
             mean_sample = np.mean(samples)
             SEM.append(np.std(samples) / np.sqrt(N))
-            RMS_diff.append(np.sqrt(np.mean((mean_sample - 1)**2)))
-            RMS_ave.append(np.var(samples)/len(samples))
+            RMS_diff.append(np.sqrt(np.mean(np.square(mean_sample - 1))))
+            RMS_ave.append(np.sqrt(np.mean(np.square(samples))))
         
         RMS_ave_dict[delta] = np.mean(RMS_ave)**0.5
         SEM_dict[delta] = np.mean(SEM)
@@ -144,7 +146,7 @@ def plot_SEM_RMS_diff_RMS_ave_over_delta(SEM : dict[float], RMS_diff : dict[floa
     plt.title('Average RMS vs Delta')
 
     plt.tight_layout()
-    plt.savefig('figures/3.1.pdf')
+    plt.savefig('figures/3.1_over_delta.pdf')
     plt.show()
 
 def plot_SEM_RMS_diff_RMS_ave_over_N(SEM_delta_N : dict[dict[int]], RMS_diff_delta_N : dict[dict[int]], RMS_ave : dict[dict[int]]) -> None:

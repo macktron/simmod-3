@@ -283,8 +283,8 @@ class MDsimulator:
 # a main() function (e.g. for profiling reasons)
 def exercise_32a():
     temperature = 1
-    dt = 0.0254
-    model = MDsimulator(n=48, T=temperature, dt=dt)
+    dt = 0.0255
+    model = MDsimulator( T=temperature, dt=dt)
     model.simulate()
     model.plot_energy(title=f'3.2a_dt={dt:.2}', save=True)
 
@@ -295,8 +295,8 @@ def exercise_32b():
     molecules.plot_energy(title=f"3.2b_T{temperature}", save=True)
 
 def exercise_32c():
-    T = 1
-    thermalize_interval_step = 10
+    T = 0.2
+    thermalize_interval_step = 5
     molecules = MDsimulator(T = T, n_steps_thermo = thermalize_interval_step)
     molecules.simulate()
     molecules.plot_energy(title = f"3.2c_T{T}_thermo{thermalize_interval_step}", save=True)
@@ -378,4 +378,4 @@ def exercise_32e():
     plt.show()
     
 if __name__ == "__main__" :
-    exercise_32e()
+    exercise_32c()
